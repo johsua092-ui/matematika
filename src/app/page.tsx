@@ -4,7 +4,7 @@ import { mathData } from '@/data/MathData';
 import FormulaCard from '@/components/FormulaCard';
 import StudyGuide from '@/components/StudyGuide';
 import TheoryVault from '@/components/TheoryVault';
-import { BookOpen, Sparkles, GraduationCap, LayoutDashboard, FileText, ShieldCheck, Github } from 'lucide-react';
+import { BookOpen, Sparkles, GraduationCap, LayoutDashboard, FileText, ShieldCheck, Globe } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Home() {
@@ -149,7 +149,7 @@ export default function Home() {
                <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-2">Developed By</span>
                <div className="flex items-center gap-4">
                  <button className="p-3 bg-white/5 rounded-full border border-white/10 hover:bg-white/10 transition-all">
-                    <Github size={20} className="text-white" />
+                    <Globe size={20} className="text-white" />
                  </button>
                </div>
             </div>
