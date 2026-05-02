@@ -1,7 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  output: 'export',
+  basePath: '/mtk-simple-',
+  assetPrefix: '/mtk-simple-/',
+  images: {
+    unoptimized: true,
+  },
 };
 
 export default nextConfig;
