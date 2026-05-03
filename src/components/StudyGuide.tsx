@@ -1,98 +1,138 @@
 'use client';
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Book, Edit3, CheckCircle2, AlertCircle, Eye, EyeOff } from 'lucide-react';
-import { mathData } from '../data/MathData';
+import { mathData, levelColors } from '../data/MathData';
+import { Pen, CheckCircle2, Eye, EyeOff, BookOpen } from 'lucide-react';
 
-const StudyGuide = () => {
+export default function StudyGuide() {
+  const [selectedLevel, setSelectedLevel] = useState<string>("all");
   const [showAnswer, setShowAnswer] = useState<Record<string, boolean>>({});
+  const [checked, setChecked] = useState<Record<string, boolean>>({});
 
-  const toggleAnswer = (id: string, idx: number) => {
-    const key = `${id}-${idx}`;
-    setShowAnswer(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
+  const filtered = selectedLevel === "all" ? mathData : mathData.filter(m => m.level === selectedLevel);
+  const mustWriteItems = filtered.filter(m => m.mustWrite);
+
+  const toggleCheck = (id: string) => setChecked(p => ({ ...p, [id]: !p[id] }));
+  const toggleAnswer2 = (key: string) => setShowAnswer(p => ({ ...p, [key]: !p[key] }));
 
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-12"
-    >
+    <div className="space-y-8">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-white mb-2">Panduan Belajar & Catatan</h2>
+        <p className="text-sm text-neutral-500">Hal-hal yang WAJIB dicatat di buku tulis dan latihan soal untuk setiap metode.</p>
+      </div>
+
+      {/* Level filter */}
+      <div className="flex gap-2 justify-center flex-wrap">
+        <button
+          onClick={() => setSelectedLevel("all")}
+          className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${
+            selectedLevel === "all" ? 'bg-white text-black border-white' : 'bg-neutral-900 text-neutral-600 border-neutral-800 hover:text-white'
+          }`}
+        >
+          Semua
+        </button>
+        {["SD", "SMP", "SMA", "Kuliah"].map(level => {
+          const c = levelColors[level];
+          return (
+            <button
+              key={level}
+              onClick={() => setSelectedLevel(level)}
+              className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all border ${
+                selectedLevel === level ? `${c.bg} ${c.text} ${c.border}` : 'bg-neutral-900 text-neutral-600 border-neutral-800 hover:text-neutral-400'
+              }`}
+            >
+              {level}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Progress */}
       <div className="text-center">
-        <h2 className="text-4xl font-extrabold mb-4 bg-gradient-to-r from-white to-blue-500 bg-clip-text text-transparent">Panduan Belajar & Catatan</h2>
-        <p className="text-zinc-400">Hal-hal wajib catat dan latihan mandiri untuk mengasah otak.</p>
+        <span className="text-xs text-neutral-600 mono">
+          {Object.values(checked).filter(Boolean).length} / {mustWriteItems.length} dicatat
+        </span>
       </div>
 
-      <div className="space-y-16">
-        {mathData.filter(item => item.notes).map((item) => (
-          <div key={item.id} className="bg-zinc-900/30 border border-white/5 rounded-[32px] p-8 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-purple-500/50"></div>
-            
-            <div className="flex items-center gap-4 mb-8">
-              <div className="p-3 bg-purple-500/10 rounded-2xl">
-                <Book className="text-purple-500" size={24} />
-              </div>
-              <h3 className="text-2xl font-bold text-white">{item.title}</h3>
-            </div>
+      {/* Guide cards */}
+      <div className="space-y-8">
+        {mustWriteItems.map((item) => {
+          const c = levelColors[item.level];
+          return (
+            <div key={item.id} className="card overflow-hidden">
+              <div className="level-line absolute left-0 top-0 bottom-0" style={{ background: c.accent }} />
 
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Notebook Section */}
-              <div className="bg-white/5 p-6 rounded-[24px] border border-white/5">
-                <div className="flex items-center gap-2 text-blue-400 font-bold text-xs uppercase tracking-widest mb-6">
-                  <Edit3 size={16} />
-                  Wajib Dicatat di Buku:
-                </div>
-                <ul className="space-y-4">
-                  {item.notes?.map((note, i) => (
-                    <li key={i} className="flex gap-3 text-sm text-zinc-300">
-                      <CheckCircle2 size={16} className="text-blue-500 mt-1 shrink-0" />
-                      <span>{note}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Practice Section */}
-              <div className="bg-white/5 p-6 rounded-[24px] border border-white/5">
-                <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-widest mb-6">
-                  <AlertCircle size={16} />
-                  Latihan Soal:
-                </div>
-                <div className="space-y-4">
-                  {item.practice?.map((p, idx) => (
-                    <div key={idx} className="bg-black/40 p-4 rounded-xl border border-white/5">
-                      <p className="text-sm font-semibold text-white mb-3">{p.q}</p>
-                      <button 
-                        onClick={() => toggleAnswer(item.id, idx)}
-                        className="flex items-center gap-2 text-[10px] text-zinc-500 border border-zinc-800 rounded-lg px-3 py-1.5 hover:bg-zinc-800 transition-colors"
-                      >
-                        {showAnswer[`${item.id}-${idx}`] ? <EyeOff size={12} /> : <Eye size={12} />}
-                        {showAnswer[`${item.id}-${idx}`] ? 'Sembunyikan' : 'Lihat Jawaban'}
-                      </button>
-                      <AnimatePresence>
-                        {showAnswer[`${item.id}-${idx}`] && (
-                          <motion.p 
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            className="mt-3 text-sm text-emerald-500 font-bold"
-                          >
-                            Jawaban: {p.a}
-                          </motion.p>
-                        )}
-                      </AnimatePresence>
+              {/* Header */}
+              <div className="p-5 pl-7 border-b border-neutral-800 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button onClick={() => toggleCheck(item.id)} className="shrink-0">
+                    <CheckCircle2 size={20} className={checked[item.id] ? 'text-emerald-400' : 'text-neutral-700'} />
+                  </button>
+                  <div>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className={`badge ${c.bg} ${c.text} ${c.border} border text-[9px]`}>{item.level}</span>
                     </div>
-                  ))}
+                    <h3 className={`font-bold text-white ${checked[item.id] ? 'line-through opacity-50' : ''}`}>
+                      {item.title}
+                    </h3>
+                  </div>
+                </div>
+                <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-2 py-1 rounded uppercase tracking-wider">
+                  ✍️ Wajib Catat
+                </span>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-0 md:divide-x divide-neutral-800">
+                {/* Notebook section */}
+                <div className="p-5 pl-7">
+                  <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider mb-4">
+                    <Pen size={14} />
+                    Salin ke Buku Tulis:
+                  </div>
+                  <div className="space-y-3">
+                    {item.notebook.map((entry, i) => (
+                      <div key={i} className="p-3 rounded-lg bg-neutral-900 border border-neutral-800 notebook-lines">
+                        <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-1.5">{entry.title}</p>
+                        {entry.content.map((line, j) => (
+                          <p key={j} className="text-sm text-neutral-300 leading-[32px]">{line}</p>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Practice section */}
+                <div className="p-5">
+                  <div className="flex items-center gap-2 text-xs font-bold text-emerald-400 uppercase tracking-wider mb-4">
+                    <BookOpen size={14} />
+                    Latihan Soal:
+                  </div>
+                  <div className="space-y-3">
+                    {item.progressiveExamples.slice(0, 3).map((ex, idx) => (
+                      <div key={idx} className="p-3 rounded-lg bg-neutral-900 border border-neutral-800">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs">{'⭐'.repeat(ex.level)}</span>
+                        </div>
+                        <p className="text-sm font-semibold text-white mb-2">{ex.question}</p>
+                        <button
+                          onClick={() => toggleAnswer2(`${item.id}-${idx}`)}
+                          className="flex items-center gap-1.5 text-[10px] text-neutral-600 border border-neutral-800 rounded px-2 py-1 hover:text-white hover:border-neutral-600 transition-colors"
+                        >
+                          {showAnswer[`${item.id}-${idx}`] ? <EyeOff size={10} /> : <Eye size={10} />}
+                          {showAnswer[`${item.id}-${idx}`] ? 'Tutup' : 'Jawaban'}
+                        </button>
+                        {showAnswer[`${item.id}-${idx}`] && (
+                          <p className="mt-2 text-sm text-emerald-400 font-bold mono animate-in">{ex.answer}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
-    </motion.div>
+    </div>
   );
-};
-
-export default StudyGuide;
+}

@@ -1,166 +1,153 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import katex from 'katex';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Calculator, Info, ChevronRight, Zap, Target } from 'lucide-react';
-import { MathItem } from '../data/MathData';
+import { ChevronDown, Calculator, BookOpen } from 'lucide-react';
+import { MathItem, levelColors } from '../data/MathData';
 
-const FormulaCard = ({ data }: { data: MathItem }) => {
-  const [inputs, setInputs] = useState<any>({});
+export default function FormulaCard({ data }: { data: MathItem }) {
+  const [inputs, setInputs] = useState<Record<string, number>>({});
   const [result, setResult] = useState<string | number | null>(null);
-  const [showDetail, setShowDetail] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const formulaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (formulaRef.current) {
-      katex.render(data.formula, formulaRef.current, {
-        throwOnError: false,
-        displayMode: true
-      });
+      try {
+        katex.render(data.formula, formulaRef.current, { throwOnError: false, displayMode: true });
+      } catch { /* ignore */ }
     }
   }, [data.formula]);
 
-  const handleInputChange = (name: string, value: string) => {
+  const colors = levelColors[data.level];
+
+  const handleInput = (name: string, value: string) => {
     const val = parseFloat(value);
-    const newInputs = { ...inputs, [name]: val };
-    setInputs(newInputs);
-    
-    if (data.inputs) {
-      if (data.inputs.every(k => !isNaN(newInputs[k]))) {
-        setResult(data.solve(newInputs));
-      } else {
-        setResult(null);
-      }
-    } else {
-      setResult(data.solve(val));
+    const next = { ...inputs, [name]: val };
+    setInputs(next);
+    if (data.solve && data.inputs) {
+      if (data.inputs.every(k => !isNaN(next[k]))) {
+        try { setResult(data.solve(next)); } catch { setResult("Error"); }
+      } else { setResult(null); }
     }
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.95 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      whileHover={{ y: -5 }}
-      className="premium-glass relative rounded-[32px] overflow-hidden group"
-    >
-      {/* Decorative Glow */}
-      <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-600/20 blur-[80px] group-hover:bg-indigo-600/30 transition-all duration-500"></div>
-      
-      <div className="p-8 relative z-10">
-        <div className="flex justify-between items-start mb-6">
-          <div className="space-y-1">
-            <div className="inline-flex items-center gap-1.5 bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full">
-              <Zap size={12} className="text-indigo-400" />
-              <span className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">{data.category}</span>
+    <div className={`card card-hover relative overflow-hidden ${data.mustWrite ? 'must-write' : ''}`}>
+      {/* Level indicator line */}
+      <div className="level-line absolute left-0 top-0 bottom-0" style={{ background: colors.accent }} />
+
+      <div className="p-6 pl-8">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className={`badge ${colors.bg} ${colors.text} ${colors.border} border`}>
+                {data.level}
+              </span>
+              <span className="text-[11px] text-neutral-500 font-medium">{data.category}</span>
             </div>
-            <h3 className="text-2xl font-black text-white tracking-tight">{data.title}</h3>
-          </div>
-          <div className="p-3 bg-white/5 rounded-2xl border border-white/10 text-white/50 group-hover:text-white group-hover:border-indigo-500/50 transition-all">
-            <Target size={20} />
+            <h3 className="text-lg font-bold text-white leading-tight">{data.title}</h3>
+            <p className="text-sm text-neutral-500 mt-0.5">{data.subtitle}</p>
           </div>
         </div>
 
-        {/* Formula Display Area */}
-        <div className="bg-black/40 border border-white/5 rounded-2xl p-6 mb-6 flex justify-center items-center overflow-x-auto min-h-[100px]">
-          <div ref={formulaRef}></div>
+        {/* Formula */}
+        <div className="bg-black/50 border border-neutral-800 rounded-lg p-4 mb-4 overflow-x-auto">
+          <div ref={formulaRef} className="min-h-[40px] flex items-center justify-center" />
         </div>
 
-        {/* Short Logic */}
-        <p className="text-zinc-400 text-sm leading-relaxed mb-8 font-medium italic border-l-2 border-indigo-500/50 pl-4">
-          "{data.logic}"
+        {/* Logic quote */}
+        <p className="text-sm text-neutral-400 italic border-l-2 border-neutral-700 pl-3 mb-4 leading-relaxed">
+          {data.logic}
         </p>
 
-        <div className="grid grid-cols-1 gap-4">
-          <button 
-            onClick={() => setShowDetail(!showDetail)}
-            className="w-full flex items-center justify-between px-6 py-4 rounded-2xl bg-white/5 border border-white/10 text-white text-sm font-bold hover:bg-white/10 transition-all group/btn"
-          >
-            <div className="flex items-center gap-2">
-              <Info size={18} className="text-indigo-400" />
-              <span>Analisis Konsep</span>
+        {/* Quick steps */}
+        <div className="space-y-1.5 mb-4">
+          {data.steps.map((step, i) => (
+            <div key={i} className="flex gap-2.5 text-sm">
+              <span className="mono text-xs text-neutral-600 w-5 text-right shrink-0 pt-0.5">{i + 1}.</span>
+              <span className="text-neutral-300">{step}</span>
             </div>
-            <ChevronRight size={18} className={`transition-transform duration-300 ${showDetail ? 'rotate-90' : ''}`} />
-          </button>
-
-          <AnimatePresence>
-            {showDetail && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="p-6 bg-indigo-500/5 rounded-2xl border border-indigo-500/20 space-y-6">
-                  <div>
-                    <h4 className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                      <Sparkles size={12} /> Kenapa Ini Jenius?
-                    </h4>
-                    <p className="text-sm text-zinc-300 leading-relaxed font-medium">{data.why}</p>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">Langkah Cepat:</h4>
-                    {data.steps.map((step, idx) => (
-                      <div key={idx} className="flex gap-3 text-xs text-zinc-400 items-start">
-                        <span className="w-5 h-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shrink-0 text-[10px] font-bold">{idx + 1}</span>
-                        <span className="pt-0.5">{step}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="pt-4 border-t border-white/5">
-                    <p className="text-[11px] text-zinc-500 italic"><span className="text-white font-bold">Contoh:</span> {data.example}</p>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {data.interactive && (
-            <div className="mt-2 bg-white/5 p-6 rounded-3xl border border-white/5">
-              <div className="flex items-center gap-2 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-4">
-                <Calculator size={14} className="text-indigo-400" />
-                Solver Interaktif
-              </div>
-              
-              <div className="flex gap-2">
-                {data.inputs ? data.inputs.map(inputName => (
-                  <input 
-                    key={inputName}
-                    type="number" 
-                    placeholder={inputName}
-                    className="w-full bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3 text-sm focus:border-indigo-500/50 outline-none transition-all placeholder:text-zinc-700"
-                    onChange={(e) => handleInputChange(inputName, e.target.value)}
-                  />
-                )) : (
-                  <input 
-                    type="number" 
-                    placeholder="Masukkan angka..." 
-                    className="w-full bg-black/40 border border-white/10 text-white rounded-xl px-4 py-3 text-sm focus:border-indigo-500/50 outline-none transition-all placeholder:text-zinc-700"
-                    onChange={(e) => handleInputChange('single', e.target.value)}
-                  />
-                )}
-              </div>
-
-              <AnimatePresence>
-                {result !== null && (
-                  <motion.div 
-                    initial={{ y: 10, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    className="mt-4 p-4 bg-indigo-600 rounded-2xl text-center shadow-xl shadow-indigo-900/40 relative overflow-hidden group/result"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover/result:translate-x-full transition-transform duration-1000"></div>
-                    <span className="text-[10px] block font-bold text-indigo-200 uppercase mb-1">Hasil Perhitungan</span>
-                    <span className="text-xl font-black text-white">{result}</span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
+          ))}
         </div>
-      </div>
-    </motion.div>
-  );
-};
 
-export default FormulaCard;
+        {/* Expand toggle */}
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="w-full flex items-center justify-between px-4 py-2.5 rounded-lg bg-neutral-800/50 border border-neutral-800 text-sm text-neutral-400 hover:text-white hover:border-neutral-700 transition-all"
+        >
+          <div className="flex items-center gap-2">
+            <BookOpen size={14} />
+            <span className="font-medium">Analisis & Contoh</span>
+          </div>
+          <ChevronDown size={14} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
+        </button>
+
+        {expanded && (
+          <div className="mt-4 space-y-4 animate-in">
+            {/* Why */}
+            <div className="p-4 rounded-lg bg-neutral-900 border border-neutral-800">
+              <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Kenapa Ini Jenius?</p>
+              <p className="text-sm text-neutral-300 leading-relaxed">{data.why}</p>
+            </div>
+
+            {/* Formula explain */}
+            <div className="p-4 rounded-lg bg-neutral-900 border border-neutral-800">
+              <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Penjelasan Rumus</p>
+              <p className="text-sm text-neutral-300 leading-relaxed">{data.formulaExplain}</p>
+            </div>
+
+            {/* Progressive Examples - first 3 */}
+            <div className="p-4 rounded-lg bg-neutral-900 border border-neutral-800">
+              <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-3">Contoh Progressive</p>
+              <div className="space-y-3">
+                {data.progressiveExamples.slice(0, 3).map((ex, i) => (
+                  <div key={i} className="p-3 rounded-lg bg-black/40 border border-neutral-800">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-xs">{'⭐'.repeat(ex.level)}</span>
+                      <span className="text-[10px] font-bold text-neutral-600 uppercase">{ex.levelName}</span>
+                    </div>
+                    <p className="text-sm font-semibold text-white mb-2">{ex.question}</p>
+                    <div className="space-y-0.5">
+                      {ex.solution.map((s, j) => (
+                        <p key={j} className="text-xs text-neutral-400 mono">{s}</p>
+                      ))}
+                    </div>
+                    <p className="text-sm font-bold text-emerald-400 mt-2 mono">= {ex.answer}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Interactive solver */}
+        {data.interactive && data.inputs && (
+          <div className="mt-4 p-4 rounded-lg bg-neutral-900/50 border border-neutral-800">
+            <div className="flex items-center gap-2 text-xs font-bold text-neutral-500 uppercase tracking-wider mb-3">
+              <Calculator size={12} />
+              Kalkulator
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {data.inputs.map((name, i) => (
+                <input
+                  key={name}
+                  type="number"
+                  placeholder={data.inputLabels?.[i] || name}
+                  className="flex-1 min-w-[80px] bg-black border border-neutral-800 text-white rounded-lg px-3 py-2 text-sm mono focus:border-neutral-600 outline-none transition-colors placeholder:text-neutral-700"
+                  onChange={(e) => handleInput(name, e.target.value)}
+                />
+              ))}
+            </div>
+            {result !== null && (
+              <div className="mt-3 p-3 rounded-lg bg-indigo-600/10 border border-indigo-500/20 text-center animate-in">
+                <span className="text-[10px] font-bold text-indigo-400 uppercase block mb-0.5">Hasil</span>
+                <span className="text-lg font-bold text-white mono">{result}</span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
